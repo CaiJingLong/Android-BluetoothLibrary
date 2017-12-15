@@ -13,7 +13,11 @@ import kotlin.concurrent.withLock
 /**
  * Created by cai on 2017/12/14.
  */
-object BluetoothConnectManager {
+object BluetoothConnectManager : Logger {
+
+    override fun isLog(): Boolean {
+        return true
+    }
 
     lateinit var application: Application
 

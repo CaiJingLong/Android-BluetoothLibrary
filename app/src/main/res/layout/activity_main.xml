@@ -8,19 +8,32 @@
     tools:context="tk.kikt.bluetoothmanager.MainActivity">
 
     <Button
+        android:id="@+id/bt_main"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Hello World!"
         app:layout_constraintBottom_toBottomOf="parent"
-        android:id="@+id/bt_main"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"/>
 
+    <TextView
+        android:id="@+id/tv_notify_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintRight_toRightOf="parent"/>
+
+    <TextView
+        android:id="@+id/tv_device_name"
+        android:layout_width="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/tv_notify_value"
+        android:layout_height="wrap_content"
+        app:layout_constraintRight_toRightOf="parent"/>
+
     <Button
-        android:text="print"
         android:id="@+id/bt_print"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:text="print"/>
 
 </android.support.constraint.ConstraintLayout>

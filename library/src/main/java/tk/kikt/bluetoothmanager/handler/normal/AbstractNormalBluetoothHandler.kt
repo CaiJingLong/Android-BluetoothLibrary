@@ -2,6 +2,7 @@ package tk.kikt.bluetoothmanager.handler.normal
 
 import android.bluetooth.BluetoothDevice
 import android.os.SystemClock
+import tk.kikt.bluetoothmanager.BluetoothConnectManager
 import tk.kikt.bluetoothmanager.BluetoothHelper
 import tk.kikt.bluetoothmanager.Logger
 import tk.kikt.bluetoothmanager.log
@@ -16,9 +17,7 @@ import kotlin.concurrent.withLock
  */
 abstract class AbstractNormalBluetoothHandler : Logger {
 
-    override fun isLog(): Boolean {
-        return true
-    }
+    override fun isLog() = BluetoothConnectManager.isLog()
 
     /**
      * 连接方法

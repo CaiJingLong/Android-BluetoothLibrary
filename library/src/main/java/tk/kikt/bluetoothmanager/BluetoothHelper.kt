@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Handler
 import android.widget.Toast
 import tk.kikt.bluetoothmanager.ext.checkShutdown
+import tk.kikt.bluetoothmanager.ext.trimAndIgnoreCaseEquals
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
@@ -23,7 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue
 object BluetoothHelper : Logger {
     var showLog = true
 
-    override fun isLog() = showLog
+    override fun isLog() = BluetoothConnectManager.isLog()
 
     //等待蓝牙开关开启,因为某些资源未释放或别的原因造成的蓝牙连接不成功,使用先关闭蓝牙开关,由系统释放的方案来解决,然后监听开启蓝牙的广播,在其中去写业务逻辑
     @JvmStatic
@@ -107,7 +108,7 @@ object BluetoothHelper : Logger {
                         }
                         BluetoothDevice.ACTION_FOUND, BluetoothDevice.ACTION_NAME_CHANGED -> {//找到设备,找到设备后由mac地址改为设备名称
                             val device = getDevice(intent)
-                            if (device?.name?.trim() ignoreCaseEquals name.trim()) {
+                            if (device?.name?.trim() trimAndIgnoreCaseEquals name.trim()) {
                                 findDevice = device
                                 adapter.cancelDiscovery()
                             }
@@ -305,7 +306,4 @@ object BluetoothHelper : Logger {
         }
     }
 
-    infix fun String?.ignoreCaseEquals(to: String?): Boolean {
-        return this?.toLowerCase() == to?.toLowerCase()
-    }
 }
