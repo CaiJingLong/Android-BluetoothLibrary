@@ -3,6 +3,7 @@ package tk.kikt.bluetoothmanager
 import android.annotation.SuppressLint
 import android.app.Application
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import tk.kikt.bluetoothmanager.handler.BluetoothHandler
 import tk.kikt.bluetoothmanager.handler.BluetoothType
 import java.util.concurrent.locks.Lock
@@ -37,16 +38,54 @@ object BluetoothConnectManager : Logger {
 
     private val handlerMap = HashMap<BluetoothType, BluetoothHandler>()
 
-    fun registerHandler(type: BluetoothType, handler: BluetoothHandler) {
+    fun registerHandler(handler: BluetoothHandler) {
         locker.withLock {
-            handlerMap[type] = handler
+            handlerMap[handler.type()] = handler
         }
+        notifyConnectChange()
     }
 
     fun unregisterHandler(type: BluetoothType) {
         locker.withLock {
             handlerMap.remove(type)
         }
+        notifyConnectChange()
     }
 
+    fun notifyConnectChange() {
+        locker.withLock {
+            for (handler in handlerMap.values) {
+                val device = handler.connectDevice()
+                if (device != null) {
+                    onConnectingDeviceListenerList.forEach {
+                        it.onConnectDeviceChange(newDevice = device)
+                    }
+                    return@withLock
+                }
+            }
+            onConnectingDeviceListenerList.forEach {
+                it.onConnectDeviceChange(newDevice = null)
+            }
+        }
+    }
+
+    private val deviceCbLocker = ReentrantLock()
+
+    interface OnConnectingDeviceListener {
+        fun onConnectDeviceChange(newDevice: BluetoothDevice?)
+    }
+
+    private val onConnectingDeviceListenerList = arrayListOf<OnConnectingDeviceListener>()
+
+    fun addOnConnectingDeviceListener(listener: OnConnectingDeviceListener) {
+        deviceCbLocker.withLock {
+            onConnectingDeviceListenerList.add(listener)
+        }
+    }
+
+    fun removeOnConnectingDeviceListener(listener: OnConnectingDeviceListener) {
+        deviceCbLocker.withLock {
+            onConnectingDeviceListenerList.remove(listener)
+        }
+    }
 }

@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothGattService
 import android.os.Build
 import android.support.annotation.RequiresApi
 import tk.kikt.bluetoothmanager.ext.uiThread
+import tk.kikt.bluetoothmanager.handler.BluetoothType
 import java.nio.charset.Charset
 import java.util.*
 
@@ -22,9 +23,10 @@ object WeightBleHandler : AbstractBleHandler() {
 
     override fun characteristicUUID(): UUID = CHARACTERISTIC_UUID
 
-    override fun handleCharacteristic(gatt: BluetoothGatt?, service: BluetoothGattService, characteristic: BluetoothGattCharacteristic) {
+    override fun handleCharacteristic(gatt: BluetoothGatt?, service: BluetoothGattService, characteristic: BluetoothGattCharacteristic): Boolean {
         gatt?.setCharacteristicNotification(characteristic, true)
-        callbackExec { it.onPrepared(gatt?.device) }
+
+        return true
     }
 
     override fun onNotifyChange(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
@@ -50,4 +52,8 @@ object WeightBleHandler : AbstractBleHandler() {
     }
 
     var callback: WeightBleCallback? = null
+
+    override fun type() = WeightBleHandler
+
+    object WeightBleHandler : BluetoothType
 }

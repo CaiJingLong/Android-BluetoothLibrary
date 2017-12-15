@@ -1,9 +1,6 @@
 package tk.kikt.bluetoothmanager
 
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattService
 import android.os.Build
 import android.os.Bundle
 import android.support.annotation.RequiresApi
@@ -11,10 +8,8 @@ import android.support.v7.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import tk.kikt.bluetoothmanager.handler.ble.AbstractBleHandler
 import tk.kikt.bluetoothmanager.handler.ble.WeightBleHandler
-import tk.kikt.bluetoothmanager.handler.normal.AbstractNormalBluetoothHandler
 import tk.kikt.bluetoothmanager.handler.normal.PrinterHandler
 import tk.kikt.bluetoothmanager.handler.normal.WeightNormalBluetoothHandler
-import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 class MainActivity : AppCompatActivity(), Logger {
@@ -27,11 +22,20 @@ class MainActivity : AppCompatActivity(), Logger {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         BluetoothConnectManager.init(application)
+
+        BluetoothConnectManager.addOnConnectingDeviceListener(object : BluetoothConnectManager.OnConnectingDeviceListener {
+            override fun onConnectDeviceChange(newDevice: BluetoothDevice?) {
+                log("the new device = $newDevice")
+                log("new device name = ${newDevice?.name}")
+            }
+        })
+
         testBleConnect()
     }
 
     private fun testBleConnect() {
-        val callback: AbstractBleHandler.BleStateCallback = object : AbstractBleHandler.BleStateCallback {
+        val callback: AbstractBleHandler.BleStateCallback = object : AbstractBleHandler.BleStateCallbackAdapter() {
+
             override fun onBeginStartScanDevice() {
                 log("开始扫描设备")
             }
@@ -60,8 +64,9 @@ class MainActivity : AppCompatActivity(), Logger {
         }
 
         bt_main.setOnClickListener {
-            WeightBleHandler.connect("BJJY-1588")
+            WeightBleHandler.connect("BJJY-1588", 5000)
         }
+
     }
 
     private fun testConnectPrinter() {
@@ -90,36 +95,6 @@ class MainActivity : AppCompatActivity(), Logger {
             override fun onReceiveWeight(msg: String) {
 
             }
-        }
-    }
-
-    object MyNormalBluetoothHandlerImpl : AbstractNormalBluetoothHandler() {
-        override fun convertMsgStringToByteArray(msg: String): ByteArray {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-        }
-
-        override fun onRead(byteArray: ByteArray) {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-        }
-    }
-
-    object MyBleBluetoothHanlderImpl : AbstractBleHandler() {
-        override fun serviceUUID(): UUID {
-            TODO("not implemented") //return your service's UUID
-        }
-
-        override fun characteristicUUID(): UUID {
-            TODO("not implemented") //return your characteristic's UUID
-        }
-
-        override fun handleCharacteristic(gatt: BluetoothGatt?, service: BluetoothGattService, characteristic: BluetoothGattCharacteristic) {
-            //handle the characteristic
-            //Example :
-            gatt?.setCharacteristicNotification(characteristic, true)
-        }
-
-        override fun onNotifyChange(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
-            //on the characteristic notify
         }
     }
 }

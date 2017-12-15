@@ -5,6 +5,7 @@ import android.os.SystemClock
 import tk.kikt.bluetoothmanager.BluetoothConnectManager
 import tk.kikt.bluetoothmanager.BluetoothHelper
 import tk.kikt.bluetoothmanager.Logger
+import tk.kikt.bluetoothmanager.handler.AbstractBluetoothHandler
 import tk.kikt.bluetoothmanager.log
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
@@ -15,7 +16,7 @@ import kotlin.concurrent.withLock
  * Created by cai on 2017/12/14.
  * 抽象的普通蓝牙连接的处理类
  */
-abstract class AbstractNormalBluetoothHandler : Logger {
+abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logger {
 
     override fun isLog() = BluetoothConnectManager.isLog()
 
@@ -25,11 +26,23 @@ abstract class AbstractNormalBluetoothHandler : Logger {
     fun conn(name: String, pwd: String, init: BluetoothCallback.() -> Unit) {
         val cb = BluetoothCallback()
         cb.init()
-
+        val outInit = cb.onConnCallback
+        val outcb = BluetoothHelper.ConnectStateCallback().apply {
+            outInit()
+        }
         cb.onConnCallback = {
-            connectSuccess = {}
-            connectFail = {}
-            connectDisconnect = {}
+            connectSuccess = {
+                outcb.connectSuccess.invoke(it)
+                currentDevice = it
+            }
+            connectFail = {
+                outcb.connectFail.invoke(it)
+                currentDevice = null
+            }
+            connectDisconnect = {
+                outcb.connectDisconnect.invoke(it)
+                currentDevice = null
+            }
         }
 
         if (readThreadPool.isShutdown) {

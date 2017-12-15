@@ -14,21 +14,27 @@ import tk.kikt.bluetoothmanager.BluetoothHelper
 import tk.kikt.bluetoothmanager.Logger
 import tk.kikt.bluetoothmanager.ext.trimAndIgnoreCaseEquals
 import tk.kikt.bluetoothmanager.ext.uiThread
+import tk.kikt.bluetoothmanager.handler.AbstractBluetoothHandler
 import tk.kikt.bluetoothmanager.log
 import java.util.*
+
 
 /**
  * Created by cai on 2017/12/14.
  */
-abstract class AbstractBleHandler : Logger {
+abstract class AbstractBleHandler : AbstractBluetoothHandler(), Logger {
 
     override fun isLog() = BluetoothConnectManager.isLog()
 
     private val application: Context
         get() = BluetoothConnectManager.application
 
+    companion object {
+        private val DURATION = 5000L
+    }
+
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
-    fun connect(name: String) {
+    fun connect(name: String, time: Long = DURATION) {
         checkAdapter { adapter ->
             BluetoothHelper.withOpen {
                 val connector: BleScanner =
@@ -40,7 +46,7 @@ abstract class AbstractBleHandler : Logger {
 
                 callbackExec { it.onBeginStartScanDevice() }
 
-                connector.scan(adapter) { success, list ->
+                connector.scan(adapter, time) { success, list ->
                     if (success.not()) {
                         callbackExec { it.onScanEnd(null) }
                         return@scan
@@ -82,11 +88,26 @@ abstract class AbstractBleHandler : Logger {
                 gatt?.disconnect()
                 return
             }
-            gatt.services?.forEach { service ->
-                if (service.uuid == serviceUUID()) {
-                    val characteristic = service.getCharacteristic(characteristicUUID())
-                    handleCharacteristic(gatt, service, characteristic)
-                }
+            val service = gatt.getService(serviceUUID())
+            val characteristic = service.getCharacteristic(characteristicUUID())
+
+            if (service == null) {
+                gatt.disconnect()
+                callbackExec { it.onNotFoundService(serviceUUID()) }
+                return
+            }
+
+            if (characteristic == null) {
+                gatt.disconnect()
+                callbackExec { it.noNotFoundCharacteristic(characteristicUUID()) }
+                return
+            }
+
+            val result = handleCharacteristic(gatt, service, characteristic)
+            if (result) {
+                callbackExec { it.onPrepared(gatt.device) }
+            } else {
+                gatt.disconnect()
             }
         }
 
@@ -106,10 +127,12 @@ abstract class AbstractBleHandler : Logger {
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     callbackExec { it.onConnect(true) }
+                    currentDevice = gatt?.device
                     gatt?.discoverServices()
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     callbackExec { it.onDisconnect() }
+                    currentDevice = null
                 }
             }
         }
@@ -118,8 +141,9 @@ abstract class AbstractBleHandler : Logger {
 
     /**
      * 处理找到特征码后的操作
+     * @return 返回false ,则直接断开设备连接,true则处理
      */
-    protected abstract fun handleCharacteristic(gatt: BluetoothGatt?, service: BluetoothGattService, characteristic: BluetoothGattCharacteristic)
+    protected abstract fun handleCharacteristic(gatt: BluetoothGatt?, service: BluetoothGattService, characteristic: BluetoothGattCharacteristic): Boolean
 
     /**
      * notify后接到通知后的回调
@@ -148,14 +172,14 @@ abstract class AbstractBleHandler : Logger {
     object API21Impl : BleScanner {
         private val deviceList = ArrayList<BluetoothDevice>()
 
-        override fun scan(adapter: BluetoothAdapter, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit) {
+        override fun scan(adapter: BluetoothAdapter, duration: Long, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit) {
             Callback.cb = action
             adapter.startLeScan(Callback)
             MyHandler.postDelayed({
                 MyHandler.removeCallbacksAndMessages(null)
                 Callback.cb(true, deviceList.toList())
                 adapter.stopLeScan(Callback)
-            }, 5000)
+            }, duration)
         }
 
         object Callback : BluetoothAdapter.LeScanCallback {
@@ -178,7 +202,7 @@ abstract class AbstractBleHandler : Logger {
 
         private val deviceList = ArrayList<BluetoothDevice>()
 
-        override fun scan(adapter: BluetoothAdapter, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit) {
+        override fun scan(adapter: BluetoothAdapter, duration: Long, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit) {
             Callback.cb = action
             adapter.bluetoothLeScanner.startScan(Callback)
             val function = {
@@ -186,7 +210,7 @@ abstract class AbstractBleHandler : Logger {
                 MyHandler.removeCallbacksAndMessages(null)
                 Callback.cb(true, deviceList.toList())
             }
-            MyHandler.postDelayed(function, 5000)
+            MyHandler.postDelayed(function, duration)
         }
 
         object Callback : ScanCallback() {
@@ -211,7 +235,7 @@ abstract class AbstractBleHandler : Logger {
     }
 
     interface BleScanner {
-        fun scan(adapter: BluetoothAdapter, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit)
+        fun scan(adapter: BluetoothAdapter, duration: Long = DURATION, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit)
     }
 
     val callbacks = ArrayList<BleStateCallback>()
@@ -262,5 +286,41 @@ abstract class AbstractBleHandler : Logger {
          */
         fun onPrepared(device: BluetoothDevice?)
 
+        /**
+         * 没有找到对应uuid的服务,与设备的连接自动关闭
+         */
+        fun onNotFoundService(serviceUUID: UUID)
+
+        /**
+         * 没有找到对应的uuid的特征,与设备的连接会自动关闭
+         */
+        fun noNotFoundCharacteristic(characteristicUUID: UUID)
+
+    }
+
+    /**
+     * 接口方法太多,适配器模式,只写自己需要继承的方法
+     */
+    open class BleStateCallbackAdapter : BleStateCallback {
+        override fun onBeginStartScanDevice() {
+        }
+
+        override fun onScanEnd(device: BluetoothDevice?) {
+        }
+
+        override fun onConnect(success: Boolean) {
+        }
+
+        override fun onDisconnect() {
+        }
+
+        override fun onPrepared(device: BluetoothDevice?) {
+        }
+
+        override fun onNotFoundService(serviceUUID: UUID) {
+        }
+
+        override fun noNotFoundCharacteristic(characteristicUUID: UUID) {
+        }
     }
 }
