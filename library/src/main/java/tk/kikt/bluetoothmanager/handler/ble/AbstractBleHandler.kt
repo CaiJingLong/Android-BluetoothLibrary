@@ -58,9 +58,15 @@ abstract class AbstractBleHandler : Logger {
         }
     }
 
+    /**
+     * @return 要连接的serviceUUID
+     */
     abstract fun serviceUUID(): UUID
-    abstract fun characteristicUUID(): UUID
 
+    /**
+     * @return 要连接的特征码UUID
+     */
+    abstract fun characteristicUUID(): UUID
 
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     fun scanService(device: BluetoothDevice) {
@@ -110,8 +116,14 @@ abstract class AbstractBleHandler : Logger {
 
     }
 
+    /**
+     * 处理找到特征码后的操作
+     */
     protected abstract fun handleCharacteristic(gatt: BluetoothGatt?, service: BluetoothGattService, characteristic: BluetoothGattCharacteristic)
 
+    /**
+     * notify后接到通知后的回调
+     */
     protected abstract fun onNotifyChange(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?)
 
     private inline fun checkAdapter(crossinline action: (adapter: BluetoothAdapter) -> Unit) {
