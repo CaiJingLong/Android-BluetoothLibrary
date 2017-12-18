@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity(), Logger {
 
     private fun testConnectPrinter() {
         bt_main.setOnClickListener {
-            PrinterHandler.conn("sxw-p051", "1234") {
+            PrinterHandler.conn("sxw-p051", "0000") {
                 onConnCallback = {
                     connectSuccess = {}
                     connectDisconnect = {}

@@ -228,32 +228,35 @@ object BluetoothHelper : Logger {
                 addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                     addAction(BluetoothDevice.ACTION_PAIRING_REQUEST)
-                } else {
-                    addAction(PAIR_REQUEST)
                 }
-                addAction(PAIR_CANCEL)
             }
 
             context.registerReceiver(object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, intent: Intent?) {
                     when (intent?.action) {
-                        BluetoothDevice.ACTION_PAIRING_REQUEST, PAIR_REQUEST -> {//请求配对
+                        BluetoothDevice.ACTION_PAIRING_REQUEST -> {//请求配对
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) { //API19 以下不支持这个广播
-                                device.setPin(pwd.toByteArray())
+                                log("请求配对")
+                                toast("正在请求配对")
+                                if (device.setPin(pwd.toByteArray())) {
+                                    context?.unregisterReceiver(this)
+                                    action()
+                                }
                             }
-                            toast("正在请求配对")
                         }
                         BluetoothDevice.ACTION_BOND_STATE_CHANGED -> {//绑定状态改变
                             if (getDevice(intent)?.bondState == BluetoothDevice.BOND_BONDED) {
                                 toast("已绑定")
-                                action()
+                                log("已绑定")
+                                context?.unregisterReceiver(this)
                             } else {
                                 toast("未绑定")
+                                log("未绑定")
                             }
-                            context?.unregisterReceiver(this)
                         }
                         PAIR_CANCEL -> {//配对取消
                             toast("配对取消")
+                            log("配对取消")
                             context?.unregisterReceiver(this)
                         }
                     }
