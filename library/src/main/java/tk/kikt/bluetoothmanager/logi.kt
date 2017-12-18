@@ -15,3 +15,9 @@ fun Logger.log(msg: Any) {
         Log.i(this.javaClass.simpleName, msg.toString())
     }
 }
+
+fun Logger.log(msg: Any, throwable: Throwable) {
+    if (isLog()) {
+        Log.i(this.javaClass.simpleName, msg.toString(), throwable)
+    }
+}

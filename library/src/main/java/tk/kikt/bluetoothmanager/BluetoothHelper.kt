@@ -138,65 +138,67 @@ object BluetoothHelper : Logger {
                 val cb = ConnectStateCallback()
                 cb.init()
                 log("准备连接")
-                val socket = device.createRfcommSocketToServiceRecord(uuid)
+                threadPool.execute(Runnable {
+                    val socket = device.createRfcommSocketToServiceRecord(uuid)
 
-                try {
-                    socket.connect()
-                    log("连接成功")
-                    cb.connectSuccess(device)
-                } catch (e: Exception) {
-                    log("连接出错")
-                    cb.connectFail(device)
-                    return@withBind
-                }
-
-                threadPool.execute {
-                    //读取相关
-                    val input: InputStream?
                     try {
-                        input = socket.inputStream
+                        socket.connect()
+                        log("连接成功")
+                        cb.connectSuccess(device)
                     } catch (e: Exception) {
+                        log("连接出错", e)
                         cb.connectFail(device)
-                        threadPool.checkShutdown {
-                            onShutDown()
-                        }
-                        return@execute
+                        return@Runnable
                     }
-                    try {
-                        while (true) {
-                            inQueue.offer(input.readBytes())
-                        }
-                    } catch (e: Exception) {
-                        cb.connectDisconnect(device)
-                        threadPool.checkShutdown {
-                            onShutDown()
-                        }
-                    }
-                }
 
-                threadPool.execute {
-                    val output: OutputStream?
-                    try {
-                        output = socket.outputStream
-                    } catch (e: Exception) {
-                        cb.connectFail(device)
-                        threadPool.checkShutdown {
-                            onShutDown()
+                    threadPool.execute {
+                        //读取相关
+                        val input: InputStream?
+                        try {
+                            input = socket.inputStream
+                        } catch (e: Exception) {
+                            cb.connectFail(device)
+                            threadPool.checkShutdown {
+                                onShutDown()
+                            }
+                            return@execute
                         }
-                        return@execute
+                        try {
+                            while (true) {
+                                inQueue.offer(input.readBytes())
+                            }
+                        } catch (e: Exception) {
+                            cb.connectDisconnect(device)
+                            threadPool.checkShutdown {
+                                onShutDown()
+                            }
+                        }
                     }
-                    try {
-                        while (true) {
-                            val bytes = outQueue.take()
-                            output.write(bytes)
+
+                    threadPool.execute {
+                        val output: OutputStream?
+                        try {
+                            output = socket.outputStream
+                        } catch (e: Exception) {
+                            cb.connectFail(device)
+                            threadPool.checkShutdown {
+                                onShutDown()
+                            }
+                            return@execute
                         }
-                    } catch (e: Exception) {
-                        cb.connectDisconnect(device)
-                        threadPool.checkShutdown {
-                            onShutDown()
+                        try {
+                            while (true) {
+                                val bytes = outQueue.take()
+                                output.write(bytes)
+                            }
+                        } catch (e: Exception) {
+                            cb.connectDisconnect(device)
+                            threadPool.checkShutdown {
+                                onShutDown()
+                            }
                         }
                     }
-                }
+                })
             }
         }
     }
