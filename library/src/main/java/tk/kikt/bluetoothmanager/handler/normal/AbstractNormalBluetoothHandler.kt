@@ -45,10 +45,6 @@ abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logg
             }
         }
 
-        if (readThreadPool.isShutdown) {
-            readThreadPool = Executors.newFixedThreadPool(3)
-        }
-
         BluetoothHelper.withOpen {
             BluetoothHelper.findDevice(name, callback = object : BluetoothHelper.OnNormalScanCallback {
                 override fun onStartScan() {
@@ -65,6 +61,11 @@ abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logg
                     BluetoothHelper.connectDevice(device, pwd, inQueue, outQueue, cb.onConnCallback) {
                         log("连接断开时调用")
                         readThreadPool.shutdown()
+
+                        if (readThreadPool.isShutdown) {
+                            readThreadPool = Executors.newFixedThreadPool(3)
+                        }
+
                         inQueue.clear()
                         outQueue.clear()
                     }
@@ -107,8 +108,11 @@ abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logg
 
     private fun waitForInputMsg() {
         readThreadPool.execute {
-            while (true) {
-                onRead(inQueue.take())
+            try {
+                while (true) {
+                    onRead(inQueue.take())
+                }
+            } catch (e: Exception) {
             }
         }
     }
