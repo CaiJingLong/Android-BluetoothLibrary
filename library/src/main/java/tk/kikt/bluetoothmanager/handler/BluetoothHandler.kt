@@ -9,5 +9,6 @@ interface BluetoothHandler {
 
     fun type(): BluetoothType
 
-    fun connectDevice(): BluetoothDevice?
+    fun getConnectDevice(): BluetoothDevice?
+
 }

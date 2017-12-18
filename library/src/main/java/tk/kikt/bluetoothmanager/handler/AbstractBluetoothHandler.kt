@@ -14,7 +14,7 @@ abstract class AbstractBluetoothHandler : BluetoothHandler {
             notifyDeviceChange()
         }
 
-    override fun connectDevice() = currentDevice
+    override fun getConnectDevice() = currentDevice
 
     init {
         manage()

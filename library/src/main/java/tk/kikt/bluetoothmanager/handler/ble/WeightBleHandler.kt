@@ -53,7 +53,7 @@ object WeightBleHandler : AbstractBleHandler() {
 
     var callback: WeightBleCallback? = null
 
-    override fun type() = WeightBleHandler
+    override fun type() = WeightBleType
 
-    object WeightBleHandler : BluetoothType
+    object WeightBleType : BluetoothType
 }

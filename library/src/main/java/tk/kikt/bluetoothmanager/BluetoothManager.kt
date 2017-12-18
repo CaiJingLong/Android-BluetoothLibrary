@@ -52,17 +52,27 @@ object BluetoothConnectManager : Logger {
         notifyConnectChange()
     }
 
+    fun getHandlerWithType(type: BluetoothType): BluetoothHandler? {
+        locker.withLock {
+            return handlerMap[type]
+        }
+    }
+
+    var currentDevice: BluetoothDevice? = null
+
     fun notifyConnectChange() {
         locker.withLock {
             for (handler in handlerMap.values) {
-                val device = handler.connectDevice()
+                val device = handler.getConnectDevice()
                 if (device != null) {
+                    currentDevice = device
                     onConnectingDeviceListenerList.forEach {
                         it.onConnectDeviceChange(newDevice = device)
                     }
                     return@withLock
                 }
             }
+            currentDevice = null
             onConnectingDeviceListenerList.forEach {
                 it.onConnectDeviceChange(newDevice = null)
             }
