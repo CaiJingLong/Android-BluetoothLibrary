@@ -11,6 +11,7 @@ import android.os.Handler
 import android.widget.Toast
 import tk.kikt.bluetoothmanager.ext.checkShutdown
 import tk.kikt.bluetoothmanager.ext.trimAndIgnoreCaseEquals
+import tk.kikt.bluetoothmanager.ext.uiThread
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
@@ -151,50 +152,52 @@ object BluetoothHelper : Logger {
                         return@Runnable
                     }
 
-                    threadPool.execute {
-                        //读取相关
-                        val input: InputStream?
-                        try {
-                            input = socket.inputStream
-                        } catch (e: Exception) {
-                            cb.connectFail(device)
-                            threadPool.checkShutdown {
-                                onShutDown()
+                    uiThread {
+                        threadPool.execute {
+                            //读取相关
+                            val input: InputStream?
+                            try {
+                                input = socket.inputStream
+                            } catch (e: Exception) {
+                                cb.connectFail(device)
+                                threadPool.checkShutdown {
+                                    onShutDown()
+                                }
+                                return@execute
                             }
-                            return@execute
+                            try {
+                                while (true) {
+                                    inQueue.offer(input.readBytes())
+                                }
+                            } catch (e: Exception) {
+                                cb.connectDisconnect(device)
+                                threadPool.checkShutdown {
+                                    onShutDown()
+                                }
+                            }
                         }
-                        try {
-                            while (true) {
-                                inQueue.offer(input.readBytes())
-                            }
-                        } catch (e: Exception) {
-                            cb.connectDisconnect(device)
-                            threadPool.checkShutdown {
-                                onShutDown()
-                            }
-                        }
-                    }
 
-                    threadPool.execute {
-                        val output: OutputStream?
-                        try {
-                            output = socket.outputStream
-                        } catch (e: Exception) {
-                            cb.connectFail(device)
-                            threadPool.checkShutdown {
-                                onShutDown()
+                        threadPool.execute {
+                            val output: OutputStream?
+                            try {
+                                output = socket.outputStream
+                            } catch (e: Exception) {
+                                cb.connectFail(device)
+                                threadPool.checkShutdown {
+                                    onShutDown()
+                                }
+                                return@execute
                             }
-                            return@execute
-                        }
-                        try {
-                            while (true) {
-                                val bytes = outQueue.take()
-                                output.write(bytes)
-                            }
-                        } catch (e: Exception) {
-                            cb.connectDisconnect(device)
-                            threadPool.checkShutdown {
-                                onShutDown()
+                            try {
+                                while (true) {
+                                    val bytes = outQueue.take()
+                                    output.write(bytes)
+                                }
+                            } catch (e: Exception) {
+                                cb.connectDisconnect(device)
+                                threadPool.checkShutdown {
+                                    onShutDown()
+                                }
                             }
                         }
                     }
