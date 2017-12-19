@@ -79,6 +79,10 @@ object BluetoothConnectManager : Logger {
         }
     }
 
+    fun disableBluetooth() {
+        adapter?.disable()
+    }
+
     private val deviceCbLocker = ReentrantLock()
 
     interface OnConnectingDeviceListener {
