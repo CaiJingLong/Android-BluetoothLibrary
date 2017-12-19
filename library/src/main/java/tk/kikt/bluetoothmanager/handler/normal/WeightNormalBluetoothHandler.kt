@@ -31,6 +31,9 @@ object WeightNormalBluetoothHandler : AbstractNormalBluetoothHandler(), Bluetoot
                 val weightString = list.toByteArray().toString(Charset.forName("gbk")).trim()
                 //业务逻辑
                 receiveWeightListener?.onReceiveWeight(weightString)
+                weightListenerExec {
+                    it.onReceiveWeight(weightString)
+                }
                 list.clear()
             }
         }
@@ -41,4 +44,28 @@ object WeightNormalBluetoothHandler : AbstractNormalBluetoothHandler(), Bluetoot
     }
 
     var receiveWeightListener: OnReceiveWeightListener? = null
+
+    private val receiverWeightListenerList = arrayListOf<OnReceiveWeightListener>()
+
+    private var weightLock: Lock = ReentrantLock()
+
+    fun addReceiveWeightListener(receiveWeightListener: OnReceiveWeightListener) {
+        weightLock.withLock {
+            receiverWeightListenerList.add(receiveWeightListener)
+        }
+    }
+
+    fun removeReceiveWeightListener(receiveWeightListener: OnReceiveWeightListener) {
+        weightLock.withLock {
+            receiverWeightListenerList.remove(receiveWeightListener)
+        }
+    }
+
+    fun weightListenerExec(action: (receiveWeightListener: OnReceiveWeightListener) -> Unit) {
+        weightLock.withLock {
+            receiverWeightListenerList.forEach {
+                action(it)
+            }
+        }
+    }
 }
