@@ -9,6 +9,9 @@ import tk.kikt.bluetoothmanager.ext.uiThread
 import tk.kikt.bluetoothmanager.handler.BluetoothType
 import java.nio.charset.Charset
 import java.util.*
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 /**
  * Created by cai on 2017/12/15.
@@ -43,15 +46,44 @@ object WeightBleHandler : AbstractBleHandler() {
         fun onValueNotify(value: String)
     }
 
-    inline fun weightCallback(crossinline action: (callback: WeightBleCallback) -> Unit) {
+    private fun weightCallback(action: (callback: WeightBleCallback) -> Unit) {
         uiThread {
-            callback?.let {
-                action(it)
+            weightLock.withLock {
+                callback?.let {
+                    action(it)
+                }
+                weightListenerExec {
+                    action(it)
+                }
             }
         }
     }
 
     var callback: WeightBleCallback? = null
+
+    private val receiverWeightListenerList = arrayListOf<WeightBleCallback>()
+
+    private var weightLock: Lock = ReentrantLock()
+
+    fun addReceiveWeightListener(receiveWeightListener: WeightBleCallback) {
+        weightLock.withLock {
+            receiverWeightListenerList.add(receiveWeightListener)
+        }
+    }
+
+    fun removeReceiveWeightListener(receiveWeightListener: WeightBleCallback) {
+        weightLock.withLock {
+            receiverWeightListenerList.remove(receiveWeightListener)
+        }
+    }
+
+    private fun weightListenerExec(action: (receiveWeightListener: WeightBleCallback) -> Unit) {
+        weightLock.withLock {
+            receiverWeightListenerList.forEach {
+                action(it)
+            }
+        }
+    }
 
     override fun type() = WeightBleType
 

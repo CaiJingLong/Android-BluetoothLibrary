@@ -1,5 +1,6 @@
 package tk.kikt.bluetoothmanager.handler.normal
 
+import tk.kikt.bluetoothmanager.ext.uiThread
 import tk.kikt.bluetoothmanager.handler.BluetoothHandler
 import tk.kikt.bluetoothmanager.handler.BluetoothType
 import java.nio.charset.Charset
@@ -25,16 +26,18 @@ object WeightNormalBluetoothHandler : AbstractNormalBluetoothHandler(), Bluetoot
     private val lock: Lock = ReentrantLock()
 
     override fun onRead(byteArray: ByteArray) {
-        lock.withLock {
-            list.addAll(byteArray.toMutableList())
-            if (list.size >= 8) {
-                val weightString = list.toByteArray().toString(Charset.forName("gbk")).trim()
-                //业务逻辑
-                receiveWeightListener?.onReceiveWeight(weightString)
-                weightListenerExec {
-                    it.onReceiveWeight(weightString)
+        uiThread {
+            lock.withLock {
+                list.addAll(byteArray.toMutableList())
+                if (list.size >= 8) {
+                    val weightString = list.toByteArray().toString(Charset.forName("gbk")).trim()
+                    //业务逻辑
+                    receiveWeightListener?.onReceiveWeight(weightString)
+                    weightListenerExec {
+                        it.onReceiveWeight(weightString)
+                    }
+                    list.clear()
                 }
-                list.clear()
             }
         }
     }
