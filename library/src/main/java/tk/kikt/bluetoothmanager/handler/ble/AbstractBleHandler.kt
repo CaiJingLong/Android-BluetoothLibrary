@@ -12,7 +12,6 @@ import android.widget.Toast
 import tk.kikt.bluetoothmanager.BluetoothConnectManager
 import tk.kikt.bluetoothmanager.BluetoothHelper
 import tk.kikt.bluetoothmanager.Logger
-import tk.kikt.bluetoothmanager.ext.trimAndIgnoreCaseEquals
 import tk.kikt.bluetoothmanager.ext.uiThread
 import tk.kikt.bluetoothmanager.handler.AbstractBluetoothHandler
 import tk.kikt.bluetoothmanager.log
@@ -46,19 +45,13 @@ abstract class AbstractBleHandler : AbstractBluetoothHandler(), Logger {
 
                 callbackExec { it.onBeginStartScanDevice() }
 
-                connector.scan(adapter, time) { success, list ->
-                    if (success.not()) {
+                connector.scanForName(adapter, name, time) { success, device ->
+                    if (success.not() || device == null) {
                         callbackExec { it.onScanEnd(null) }
-                        return@scan
+                    } else {
+                        scanService(device)
+                        callbackExec { it.onScanEnd(device) }
                     }
-                    for (bluetoothDevice in list) {
-                        if (bluetoothDevice.name trimAndIgnoreCaseEquals name) {
-                            callbackExec { it.onScanEnd(bluetoothDevice) }
-                            scanService(bluetoothDevice)
-                            return@scan
-                        }
-                    }
-                    callbackExec { it.onScanEnd(null) }
                 }
             }
         }
@@ -172,7 +165,29 @@ abstract class AbstractBleHandler : AbstractBluetoothHandler(), Logger {
     object API21Impl : BleScanner {
         private val deviceList = ArrayList<BluetoothDevice>()
 
-        override fun scan(adapter: BluetoothAdapter, duration: Long, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit) {
+        override fun scanForName(adapter: BluetoothAdapter, name: String, duration: Long, action: (success: Boolean, device: BluetoothDevice?) -> Unit) {
+            fun fail() {
+                action(false, null)
+                adapter.stopLeScan(DeviceCallback)
+                MyHandler.removeCallbacksAndMessages(null)
+            }
+
+            fun success(device: BluetoothDevice) {
+                action(true, device)
+                MyHandler.removeCallbacksAndMessages(null)
+            }
+
+            MyHandler.postDelayed({ fail() }, duration)
+
+            DeviceCallback.cb = {
+                if (it?.name == name) {
+                    success(it)
+                }
+            }
+            adapter.startLeScan(DeviceCallback)
+        }
+
+        override fun scanForList(adapter: BluetoothAdapter, duration: Long, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit) {
             Callback.cb = action
             adapter.startLeScan(Callback)
             MyHandler.postDelayed({
@@ -191,18 +206,52 @@ abstract class AbstractBleHandler : AbstractBluetoothHandler(), Logger {
             }
         }
 
+        object DeviceCallback : BluetoothAdapter.LeScanCallback {
+            var cb = { device: BluetoothDevice? -> }
+
+            override fun onLeScan(device: BluetoothDevice?, rssi: Int, scanRecord: ByteArray?) {
+                cb.invoke(device)
+            }
+        }
+
         private object MyHandler : Handler()
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     object NewImpl : BleScanner, Logger {
+        override fun scanForName(adapter: BluetoothAdapter, name: String, duration: Long, action: (success: Boolean, device: BluetoothDevice?) -> Unit) {
+            fun fail() {
+                action(false, null)
+                adapter.bluetoothLeScanner.stopScan(DeviceCallback)
+                MyHandler.removeCallbacksAndMessages(null)
+            }
+
+            fun success(device: BluetoothDevice) {
+                action(true, device)
+                MyHandler.removeCallbacksAndMessages(null)
+            }
+
+            MyHandler.postDelayed({ fail() }, duration)
+
+            DeviceCallback.cb = { result, scanResult ->
+                if (result.not()) {
+                    fail()
+                } else {
+                    if (scanResult?.device?.name == name) {
+                        success(scanResult.device)
+                    }
+                }
+            }
+            adapter.bluetoothLeScanner.startScan(DeviceCallback)
+        }
+
         override fun isLog(): Boolean {
             return true
         }
 
         private val deviceList = ArrayList<BluetoothDevice>()
 
-        override fun scan(adapter: BluetoothAdapter, duration: Long, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit) {
+        override fun scanForList(adapter: BluetoothAdapter, duration: Long, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit) {
             Callback.cb = action
             adapter.bluetoothLeScanner.startScan(Callback)
             val function = {
@@ -231,11 +280,27 @@ abstract class AbstractBleHandler : AbstractBluetoothHandler(), Logger {
             }
         }
 
+        object DeviceCallback : ScanCallback() {
+            var cb = { success: Boolean, result: ScanResult? -> }
+
+            override fun onScanResult(callbackType: Int, result: ScanResult?) {
+                super.onScanResult(callbackType, result)
+                cb.invoke(true, result)
+            }
+
+            override fun onScanFailed(errorCode: Int) {
+                super.onScanFailed(errorCode)
+                cb.invoke(false, null)
+            }
+        }
+
         private object MyHandler : Handler()
     }
 
     interface BleScanner {
-        fun scan(adapter: BluetoothAdapter, duration: Long = DURATION, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit)
+        fun scanForList(adapter: BluetoothAdapter, duration: Long = DURATION, action: (success: Boolean, list: List<BluetoothDevice>) -> Unit)
+
+        fun scanForName(adapter: BluetoothAdapter, name: String, duration: Long = DURATION, action: (success: Boolean, device: BluetoothDevice?) -> Unit)
     }
 
     val callbacks = ArrayList<BleStateCallback>()

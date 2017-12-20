@@ -30,8 +30,8 @@ class MainActivity : AppCompatActivity(), Logger {
             }
         })
 
-//        testBleConnect()
-        testConnectPrinter()
+        testBleConnect()
+//        testConnectPrinter()
     }
 
     private fun testBleConnect() {
