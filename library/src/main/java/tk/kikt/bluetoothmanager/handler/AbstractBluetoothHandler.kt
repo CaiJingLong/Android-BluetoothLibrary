@@ -25,7 +25,7 @@ abstract class AbstractBluetoothHandler : BluetoothHandler {
     }
 
     fun unmanageSelf() {
-        BluetoothConnectManager.registerHandler(this)
+        BluetoothConnectManager.unregisterHandler(this.type())
     }
 
     protected fun notifyDeviceChange() {

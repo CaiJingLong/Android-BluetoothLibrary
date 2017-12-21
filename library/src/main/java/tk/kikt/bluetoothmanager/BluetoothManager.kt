@@ -60,12 +60,15 @@ object BluetoothConnectManager : Logger {
 
     var currentDevice: BluetoothDevice? = null
 
+    var currentConnectHandler: BluetoothHandler? = null
+
     fun notifyConnectChange() {
         locker.withLock {
             for (handler in handlerMap.values) {
                 val device = handler.getConnectDevice()
                 if (device != null) {
                     currentDevice = device
+                    currentConnectHandler = handler
                     onConnectingDeviceListenerList.forEach {
                         it.onConnectDeviceChange(newDevice = device)
                     }
@@ -73,6 +76,7 @@ object BluetoothConnectManager : Logger {
                 }
             }
             currentDevice = null
+            currentConnectHandler = null
             onConnectingDeviceListenerList.forEach {
                 it.onConnectDeviceChange(newDevice = null)
             }

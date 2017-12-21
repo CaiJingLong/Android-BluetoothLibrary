@@ -2,6 +2,8 @@ package tk.kikt.bluetoothmanager.handler.normal
 
 import tk.kikt.bluetoothmanager.handler.BluetoothHandler
 import tk.kikt.bluetoothmanager.handler.BluetoothType
+import tk.kikt.bluetoothmanager.handler.PowerType
+import tk.kikt.bluetoothmanager.handler.type.PrinterDeviceType
 import java.nio.charset.Charset
 
 /**
@@ -12,10 +14,13 @@ object PrinterHandler : AbstractNormalBluetoothHandler(), BluetoothHandler {
         return msg.toByteArray(Charset.forName("gbk"))
     }
 
-    object PrinterType : BluetoothType
-
     override fun onRead(byteArray: ByteArray) {
     }
 
     override fun type() = PrinterType
+
+    object PrinterType : BluetoothType {
+        override val deviceType = PrinterDeviceType
+        override val powerType = PowerType.NORMAL
+    }
 }

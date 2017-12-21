@@ -3,6 +3,8 @@ package tk.kikt.bluetoothmanager.handler.normal
 import tk.kikt.bluetoothmanager.ext.uiThread
 import tk.kikt.bluetoothmanager.handler.BluetoothHandler
 import tk.kikt.bluetoothmanager.handler.BluetoothType
+import tk.kikt.bluetoothmanager.handler.PowerType
+import tk.kikt.bluetoothmanager.handler.type.WeightPlatformDeviceType
 import java.nio.charset.Charset
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
@@ -13,9 +15,12 @@ import kotlin.concurrent.withLock
  * 普通蓝牙电子秤 8位版
  */
 object WeightNormalBluetoothHandler : AbstractNormalBluetoothHandler(), BluetoothHandler {
-    override fun type() = Weight
+    override fun type() = WeightNormalType
 
-    object Weight : BluetoothType
+    object WeightNormalType : BluetoothType {
+        override val deviceType = WeightPlatformDeviceType
+        override val powerType = PowerType.NORMAL
+    }
 
     override fun convertMsgStringToByteArray(msg: String): ByteArray {
         return msg.toByteArray(Charset.forName("gbk"))

@@ -7,6 +7,8 @@ import android.os.Build
 import android.support.annotation.RequiresApi
 import tk.kikt.bluetoothmanager.ext.uiThread
 import tk.kikt.bluetoothmanager.handler.BluetoothType
+import tk.kikt.bluetoothmanager.handler.PowerType
+import tk.kikt.bluetoothmanager.handler.type.WeightPlatformDeviceType
 import java.nio.charset.Charset
 import java.util.*
 import java.util.concurrent.locks.Lock
@@ -87,5 +89,8 @@ object WeightBleHandler : AbstractBleHandler() {
 
     override fun type() = WeightBleType
 
-    object WeightBleType : BluetoothType
+    object WeightBleType : BluetoothType {
+        override val deviceType = WeightPlatformDeviceType
+        override val powerType = PowerType.BLE
+    }
 }
