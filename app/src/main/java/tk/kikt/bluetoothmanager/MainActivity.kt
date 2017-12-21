@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.support.annotation.RequiresApi
 import android.support.v7.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
+import tk.kikt.bluetoothmanager.handler.OnReadCallback
 import tk.kikt.bluetoothmanager.handler.ble.AbstractBleHandler
 import tk.kikt.bluetoothmanager.handler.ble.WeightBleHandler
 import tk.kikt.bluetoothmanager.handler.normal.PrinterHandler
@@ -91,9 +92,29 @@ class MainActivity : AppCompatActivity(), Logger {
         }
 
         bt_print.setOnClickListener {
+            PrinterHandler
             PrinterHandler.write(qrCode("type:6;name:BJJY-1588"))
             PrinterHandler.write("\n\n\ntype:6;name:BJJY-1588")
+            PrinterHandler.write(byteArrayOf())
         }
+
+    }
+
+    override fun onStart() {
+        super.onStart()
+        PrinterHandler.addOnReadCallback(readCallback)
+    }
+
+    private val readCallback: OnReadCallback = object : OnReadCallback {
+        override fun onRead(byteArray: ByteArray) {
+            log("receive read $byteArray")
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+
+        PrinterHandler.removeOnReadCallback(readCallback)
     }
 
     @Throws(IOException::class)

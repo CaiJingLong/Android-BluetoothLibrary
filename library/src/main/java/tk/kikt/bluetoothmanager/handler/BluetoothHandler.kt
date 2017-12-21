@@ -11,4 +11,7 @@ interface BluetoothHandler {
 
     fun getConnectDevice(): BluetoothDevice?
 
+    fun addOnReadCallback(readCallback: OnReadCallback)
+
+    fun removeOnReadCallback(readCallback: OnReadCallback)
 }

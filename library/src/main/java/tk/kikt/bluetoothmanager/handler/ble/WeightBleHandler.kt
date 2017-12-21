@@ -36,6 +36,7 @@ object WeightBleHandler : AbstractBleHandler() {
 
     override fun onNotifyChange(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
         characteristic?.value?.apply {
+            callReadByteArray(this)
             val value = toString(Charset.forName("gbk")).trim()
             weightCallback { callback ->
                 callback.onValueNotify(value)

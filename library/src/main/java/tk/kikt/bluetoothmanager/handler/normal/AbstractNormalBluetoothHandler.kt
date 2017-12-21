@@ -110,7 +110,9 @@ abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logg
         readThreadPool.execute {
             try {
                 while (true) {
-                    onRead(inQueue.take())
+                    val byteArray = inQueue.take()
+                    callReadByteArray(byteArray)
+                    onRead(byteArray)
                 }
             } catch (e: Exception) {
             }
