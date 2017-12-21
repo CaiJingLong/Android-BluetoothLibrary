@@ -174,6 +174,7 @@ abstract class AbstractBleHandler : AbstractBluetoothHandler(), Logger {
 
             fun success(device: BluetoothDevice) {
                 action(true, device)
+                adapter.stopLeScan(DeviceCallback)
                 MyHandler.removeCallbacksAndMessages(null)
             }
 
@@ -228,6 +229,7 @@ abstract class AbstractBleHandler : AbstractBluetoothHandler(), Logger {
 
             fun success(device: BluetoothDevice) {
                 action(true, device)
+                adapter.bluetoothLeScanner.stopScan(DeviceCallback)
                 MyHandler.removeCallbacksAndMessages(null)
             }
 

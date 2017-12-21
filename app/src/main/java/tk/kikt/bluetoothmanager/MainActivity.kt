@@ -10,6 +10,8 @@ import tk.kikt.bluetoothmanager.handler.ble.AbstractBleHandler
 import tk.kikt.bluetoothmanager.handler.ble.WeightBleHandler
 import tk.kikt.bluetoothmanager.handler.normal.PrinterHandler
 import tk.kikt.bluetoothmanager.handler.normal.WeightNormalBluetoothHandler
+import java.io.IOException
+import java.nio.charset.Charset
 
 @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
 class MainActivity : AppCompatActivity(), Logger {
@@ -30,8 +32,8 @@ class MainActivity : AppCompatActivity(), Logger {
             }
         })
 
-        testBleConnect()
-//        testConnectPrinter()
+//        testBleConnect()
+        testConnectPrinter()
     }
 
     private fun testBleConnect() {
@@ -89,8 +91,54 @@ class MainActivity : AppCompatActivity(), Logger {
         }
 
         bt_print.setOnClickListener {
-            PrinterHandler.write("你好")
+            PrinterHandler.write(qrCode("type:6;name:BJJY-1588"))
+            PrinterHandler.write("\n\n\ntype:6;name:BJJY-1588")
         }
+    }
+
+    @Throws(IOException::class)
+    fun qrCode(qrData: String): ByteArray {
+        val moduleSize = 8
+        val length = qrData.gbkByteArray().size
+
+        val list = ArrayList<Byte>()
+
+        //打印二维码矩阵
+        list.add(0x1D)// init
+        list.add(107)// adjust height of barcode
+        list.add(107)// adjust height of barcode
+        list.add((length + 3).toByte()) // pl
+        list.add(0) // ph
+        list.add(49) // cn
+        list.add(80) // fn
+        list.add(48) //
+        list.addAll(qrData.gbkByteArray().asList())
+
+        list.add(0x1D)
+        list.add(40.toByte(), 107)// list.add("(k")
+        list.add(3)
+        list.add(0)
+        list.add(49)
+        list.add(69)
+        list.add(48)
+
+        list.add(0x1D)
+        list.add(40.toByte(), 107)// list.add("(k")
+        list.add(3)
+        list.add(0)
+        list.add(49)
+        list.add(67)
+        list.add(moduleSize.toByte())
+
+        list.add(0x1D)
+        list.add(40.toByte(), 107)// list.add("(k")
+        list.add(3) // pl
+        list.add(0) // ph
+        list.add(49) // cn
+        list.add(81) // fn
+        list.add(48) // m
+
+        return list.toByteArray()
     }
 
     private fun testConnectWeight() {
@@ -100,4 +148,12 @@ class MainActivity : AppCompatActivity(), Logger {
             }
         }
     }
+}
+
+private fun <E> MutableList<E>.add(vararg elements: E) {
+    this.addAll(elements)
+}
+
+private fun String.gbkByteArray(): ByteArray {
+    return toByteArray(Charset.forName("gbk"))
 }
