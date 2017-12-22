@@ -1,7 +1,6 @@
 package tk.kikt.bluetoothmanager.handler.normal
 
 import android.bluetooth.BluetoothDevice
-import android.os.SystemClock
 import tk.kikt.bluetoothmanager.BluetoothConnectManager
 import tk.kikt.bluetoothmanager.BluetoothHelper
 import tk.kikt.bluetoothmanager.Logger
@@ -89,8 +88,6 @@ abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logg
         writeThreadPool.execute {
             writLock.withLock {
                 outQueue.offer(convertMsgStringToByteArray(msg))
-                outQueue.offer(convertMsgStringToByteArray("\n"))
-                SystemClock.sleep(writeDuration)
             }
         }
     }
@@ -99,7 +96,6 @@ abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logg
         writeThreadPool.execute {
             writLock.withLock {
                 outQueue.offer(byteArray)
-                SystemClock.sleep(writeDuration)
             }
         }
     }

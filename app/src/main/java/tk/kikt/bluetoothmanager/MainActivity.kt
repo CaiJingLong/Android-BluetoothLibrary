@@ -92,10 +92,17 @@ class MainActivity : AppCompatActivity(), Logger {
         }
 
         bt_print.setOnClickListener {
-            PrinterHandler
-            PrinterHandler.write(qrCode("type:6;name:BJJY-1588"))
-            PrinterHandler.write("\n\n\ntype:6;name:BJJY-1588")
-            PrinterHandler.write(byteArrayOf())
+            val byteArray = qrCode2("type:6;name:BJJY-1588")
+            val msg = "\n\n\ntype:6;name:BJJY-1588".gbkByteArray()
+
+            val target = arrayListOf<Byte>().apply {
+                addAll(byteArray.toList())
+                addAll(msg.toList())
+            }.toByteArray()
+
+            println("byteArray = ${byteArray.asList()}")
+            println("target = ${target.asList()}")
+//            PrinterHandler.write(target)
         }
 
     }
@@ -160,6 +167,46 @@ class MainActivity : AppCompatActivity(), Logger {
         list.add(48) // m
 
         return list.toByteArray()
+    }
+
+    /**
+     * @param qrData 二维码内容
+     * @param moduleSize 大小,默认是6
+     */
+    @Throws(IOException::class)
+    fun qrCode2(qrData: String, moduleSize: Int = 6): ByteArray {
+        val length = qrData.gbkByteArray().size
+
+        val list = ArrayList<Byte>()
+
+        //二维码像素点大小
+        list.addInt(0x1B, 0x23, 0x23, 0x51, 0x50, 0x49, 0x58, moduleSize)
+
+        //单元大小 GS	   (     k 	  pL    pH     1     C   n
+        list.addInt(0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x43, moduleSize)
+
+        //设置错误纠错等级
+        //GS	  (    k 	  pL    pH     1     E   n
+        list.addInt(0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x45, 0x49)
+
+        //传输数据到编码缓存
+        // GS	  (    k 	  pL    pH     1     P   m   d0....dk
+        // 1D 	 28   6B      03    00     31    50  m   d0...dk
+        //pL pH, 为后续数据长度
+        // (pL + pH×256) = len + 3， len 为编码数据长度
+        list.addInt(0x1D, 0x28, 0x6B, length + 3, 0x00, 0x31, 0x50, 0x30)
+        list.addAll(qrData.gbkByteArray().asList())//数据
+
+        //打印缓存
+        // GS	   (    k 	  pL    pH     1     Q   m
+        // 1D 	  28   6B     03    00     31    51   m
+        list.addInt(0x1D, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30)
+
+        return list.toByteArray()
+    }
+
+    private fun ArrayList<Byte>.addInt(vararg i: Int) {
+        i.forEach { add(it.toByte()) }
     }
 
     private fun testConnectWeight() {

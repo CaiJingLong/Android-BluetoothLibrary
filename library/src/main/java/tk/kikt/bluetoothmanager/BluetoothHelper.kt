@@ -192,6 +192,7 @@ object BluetoothHelper : Logger {
                                 while (true) {
                                     val bytes = outQueue.take()
                                     output.write(bytes)
+                                    output.flush()
                                 }
                             } catch (e: Exception) {
                                 cb.connectDisconnect(device)
