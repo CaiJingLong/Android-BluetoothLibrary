@@ -12,6 +12,7 @@ import android.widget.Toast
 import tk.kikt.bluetoothmanager.BluetoothConnectManager
 import tk.kikt.bluetoothmanager.BluetoothHelper
 import tk.kikt.bluetoothmanager.Logger
+import tk.kikt.bluetoothmanager.ext.trimAndIgnoreCaseEquals
 import tk.kikt.bluetoothmanager.ext.uiThread
 import tk.kikt.bluetoothmanager.handler.AbstractBluetoothHandler
 import tk.kikt.bluetoothmanager.log
@@ -181,7 +182,7 @@ abstract class AbstractBleHandler : AbstractBluetoothHandler(), Logger {
             MyHandler.postDelayed({ fail() }, duration)
 
             DeviceCallback.cb = {
-                if (it?.name == name) {
+                if (it != null && it.name trimAndIgnoreCaseEquals name) {
                     success(it)
                 }
             }
@@ -239,7 +240,7 @@ abstract class AbstractBleHandler : AbstractBluetoothHandler(), Logger {
                 if (result.not()) {
                     fail()
                 } else {
-                    if (scanResult?.device?.name == name) {
+                    if (scanResult != null && scanResult.device.name trimAndIgnoreCaseEquals name) {
                         success(scanResult.device)
                     }
                 }
