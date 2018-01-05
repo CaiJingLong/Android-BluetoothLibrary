@@ -5,20 +5,48 @@ import android.os.Build
 import android.os.Bundle
 import android.support.annotation.RequiresApi
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import kotlinx.android.synthetic.main.activity_main.*
+import tk.kikt.bluetoothmanager.handler.BluetoothType
+import tk.kikt.bluetoothmanager.handler.DeviceType
 import tk.kikt.bluetoothmanager.handler.OnReadCallback
+import tk.kikt.bluetoothmanager.handler.PowerType
 import tk.kikt.bluetoothmanager.handler.ble.AbstractBleHandler
 import tk.kikt.bluetoothmanager.handler.ble.WeightBleHandler
+import tk.kikt.bluetoothmanager.handler.normal.AbstractNormalBluetoothHandler
 import tk.kikt.bluetoothmanager.handler.normal.PrinterHandler
 import tk.kikt.bluetoothmanager.handler.normal.WeightNormalBluetoothHandler
 import java.io.IOException
 import java.nio.charset.Charset
 
 @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
-class MainActivity : AppCompatActivity(), Logger {
+class MainActivity : AppCompatActivity(), Logger, OnReadCallback {
 
     override fun isLog(): Boolean {
         return true
+    }
+
+    object TestHandler : AbstractNormalBluetoothHandler() {
+        val sb = StringBuilder()
+
+        override fun type() = object : BluetoothType {
+            override val deviceType: DeviceType
+                get() = object : DeviceType {}
+
+            override val powerType: PowerType
+                get() = PowerType.NORMAL
+        }
+
+        override fun convertMsgStringToByteArray(msg: String): ByteArray {
+            return msg.toByteArray()
+        }
+
+        override fun onRead(byteArray: ByteArray) {
+            byteArray.forEach {
+                sb.append(it, ",")
+            }
+
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,15 +54,40 @@ class MainActivity : AppCompatActivity(), Logger {
         setContentView(R.layout.activity_main)
         BluetoothConnectManager.init(application)
 
-        BluetoothConnectManager.addOnConnectingDeviceListener(object : BluetoothConnectManager.OnConnectingDeviceListener {
-            override fun onConnectDeviceChange(newDevice: BluetoothDevice?) {
-                log("the new device = $newDevice")
-                log("new device name = ${newDevice?.name}")
-            }
-        })
+//        BluetoothConnectManager.addOnConnectingDeviceListener(object : BluetoothConnectManager.OnConnectingDeviceListener {
+//            override fun onConnectDeviceChange(newDevice: BluetoothDevice?) {
+//                log("the new device = $newDevice")
+//                log("new device name = ${newDevice?.name}")
+//            }
+//        })
 
 //        testBleConnect()
-        testConnectPrinter()
+//        testConnectPrinter()
+
+        PrinterHandler.addOnReadCallback(this)
+        bt_print.setOnClickListener {
+            PrinterHandler.write(byteArrayOf(0x1D, 0x67, 0x69))
+            Log.i(TAG, "发送指令完毕")
+        }
+
+        PrinterHandler.conn("sxw-p051", "0000", {
+            onConnCallback = {
+                connectSuccess = {
+                    Log.i(TAG, "连接 ${it.name}成功")
+                }
+            }
+        })
+    }
+
+    private val TAG = "MainActivity";
+
+    override fun onRead(byteArray: ByteArray) {
+        Log.i(TAG, "${byteArray.toMutableList()}")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        PrinterHandler.removeOnReadCallback(this)
     }
 
     private fun testBleConnect() {

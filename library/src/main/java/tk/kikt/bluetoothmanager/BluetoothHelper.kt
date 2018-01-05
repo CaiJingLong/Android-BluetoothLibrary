@@ -166,8 +166,13 @@ object BluetoothHelper : Logger {
                                 return@execute
                             }
                             try {
+                                val buf = ByteArray(1024)
+                                var len = 0
                                 while (true) {
-                                    inQueue.offer(input.readBytes())
+                                    len = input.read(buf)
+                                    if (len > 0) {
+                                        inQueue.offer(Arrays.copyOf(buf, len))
+                                    }
                                 }
                             } catch (e: Exception) {
                                 cb.connectDisconnect(device)

@@ -19,6 +19,8 @@ abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logg
 
     override fun isLog() = BluetoothConnectManager.isLog()
 
+    var findDeviceTimeout = 60000L
+
     /**
      * 连接方法
      */
@@ -45,7 +47,7 @@ abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logg
         }
 
         BluetoothHelper.withOpen {
-            BluetoothHelper.findDevice(name, callback = object : BluetoothHelper.OnNormalScanCallback {
+            BluetoothHelper.findDevice(name, delayOff = findDeviceTimeout, callback = object : BluetoothHelper.OnNormalScanCallback {
                 override fun onStartScan() {
                     cb.onStartScan()
                 }
