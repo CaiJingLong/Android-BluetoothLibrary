@@ -126,6 +126,8 @@ object BluetoothHelper : Logger {
         }
     }
 
+    var useInsecureConnect = true
+
     /**
      * 连接蓝牙设备的方法
      * @param inQueue 读取的队列
@@ -140,7 +142,7 @@ object BluetoothHelper : Logger {
                 cb.init()
                 log("准备连接")
                 threadPool.execute(Runnable {
-                    val socket = device.createRfcommSocketToServiceRecord(uuid)
+                    val socket = if (!useInsecureConnect) device.createRfcommSocketToServiceRecord(uuid) else device.createInsecureRfcommSocketToServiceRecord(uuid)
 
                     try {
                         socket.connect()

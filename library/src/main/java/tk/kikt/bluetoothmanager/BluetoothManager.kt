@@ -16,6 +16,12 @@ import kotlin.concurrent.withLock
  */
 object BluetoothConnectManager : Logger {
 
+    var useInsecureConnect
+        set(value) {
+            BluetoothHelper.useInsecureConnect = value
+        }
+        get() = BluetoothHelper.useInsecureConnect
+
     override fun isLog(): Boolean {
         return true
     }

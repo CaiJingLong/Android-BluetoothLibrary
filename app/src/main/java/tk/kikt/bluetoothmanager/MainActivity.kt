@@ -54,6 +54,8 @@ class MainActivity : AppCompatActivity(), Logger, OnReadCallback {
         setContentView(R.layout.activity_main)
         BluetoothConnectManager.init(application)
 
+        tv_notify_value.text = byteArrayOf(32, 32, 50, 55, 46, 54, 53, 13).toString(Charset.defaultCharset())
+
 //        BluetoothConnectManager.addOnConnectingDeviceListener(object : BluetoothConnectManager.OnConnectingDeviceListener {
 //            override fun onConnectDeviceChange(newDevice: BluetoothDevice?) {
 //                log("the new device = $newDevice")
