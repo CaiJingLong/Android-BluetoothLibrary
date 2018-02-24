@@ -2,6 +2,7 @@ package tk.kikt.bluetoothmanager
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -17,6 +18,7 @@ import java.io.OutputStream
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
+
 
 /**
  * Created by cai on 2017/12/14.
@@ -142,16 +144,21 @@ object BluetoothHelper : Logger {
                 cb.init()
                 log("准备连接")
                 threadPool.execute(Runnable {
-                    val socket = if (!useInsecureConnect) device.createRfcommSocketToServiceRecord(uuid) else device.createInsecureRfcommSocketToServiceRecord(uuid)
+                    var socket = if (!useInsecureConnect) device.createRfcommSocketToServiceRecord(uuid) else device.createInsecureRfcommSocketToServiceRecord(uuid)
 
                     try {
                         socket.connect()
                         log("连接成功")
                         cb.connectSuccess(device)
                     } catch (e: Exception) {
-                        log("连接出错", e)
-                        cb.connectFail(device)
-                        return@Runnable
+                        socket = device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType).invoke(device, 1) as BluetoothSocket
+                        try {
+                            socket.connect()
+                        } catch (e: Exception) {
+                            log("连接出错", e)
+                            cb.connectFail(device)
+                            return@Runnable
+                        }
                     }
 
                     uiThread {
