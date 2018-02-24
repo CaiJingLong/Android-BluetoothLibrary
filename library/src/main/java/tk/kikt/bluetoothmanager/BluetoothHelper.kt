@@ -145,15 +145,16 @@ object BluetoothHelper : Logger {
                 log("准备连接")
                 threadPool.execute(Runnable {
                     var socket = if (!useInsecureConnect) device.createRfcommSocketToServiceRecord(uuid) else device.createInsecureRfcommSocketToServiceRecord(uuid)
-
                     try {
                         socket.connect()
-                        log("连接成功")
+                        log("连接成功 ${if (useInsecureConnect) "不稳定方案" else "稳定方案"}")
                         cb.connectSuccess(device)
                     } catch (e: Exception) {
                         socket = device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType).invoke(device, 1) as BluetoothSocket
                         try {
                             socket.connect()
+                            log("连接成功,反射方案")
+                            cb.connectSuccess(device)
                         } catch (e: Exception) {
                             log("连接出错", e)
                             cb.connectFail(device)
