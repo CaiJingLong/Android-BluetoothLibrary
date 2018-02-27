@@ -1,5 +1,7 @@
 package tk.kikt.bluetoothmanager.ext
 
+import android.os.Handler
+import android.os.Looper
 import java.util.concurrent.ExecutorService
 
 /**
@@ -10,4 +12,14 @@ fun ExecutorService.checkShutdown(onShutDown: (() -> Unit)? = null) {
         this.shutdownNow()
         onShutDown?.invoke()
     }
+}
+
+val handler = Handler(Looper.getMainLooper())
+
+fun runDelay(delay: Long, action: () -> Unit) {
+    if (delay == 0L) {
+        handler.post(action)
+        return
+    }
+    handler.postDelayed(action, delay)
 }

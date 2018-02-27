@@ -77,6 +77,10 @@ abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logg
 
     }
 
+    fun disconnect() {
+        BluetoothHelper.disconnect()
+    }
+
     private var readThreadPool = Executors.newFixedThreadPool(3)
     private var writeThreadPool = Executors.newFixedThreadPool(3)
     private var writLock = ReentrantLock()

@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.Handler
 import android.widget.Toast
 import tk.kikt.bluetoothmanager.ext.checkShutdown
+import tk.kikt.bluetoothmanager.ext.runDelay
 import tk.kikt.bluetoothmanager.ext.trimAndIgnoreCaseEquals
 import tk.kikt.bluetoothmanager.ext.uiThread
 import java.io.InputStream
@@ -32,28 +33,32 @@ object BluetoothHelper : Logger {
     //等待蓝牙开关开启,因为某些资源未释放或别的原因造成的蓝牙连接不成功,使用先关闭蓝牙开关,由系统释放的方案来解决,然后监听开启蓝牙的广播,在其中去写业务逻辑
     @JvmStatic
     inline fun withOpen(crossinline action: () -> Unit) {
-        checkBluetoothAdapter { context, adapter ->
-            context.registerReceiver(object : BroadcastReceiver() {
-                override fun onReceive(context: Context, intent: Intent?) {
-                    if (intent?.action != BluetoothAdapter.ACTION_STATE_CHANGED) {
-                        return
-                    }
-                    val a = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1)
-                    log(a)
-                    when (a) {
-                        BluetoothAdapter.STATE_OFF -> adapter.enable()
-                        BluetoothAdapter.STATE_ON -> {
-                            context.unregisterReceiver(this)
-                            action()
+        val delay = if (currentSocket == null) 0 else 3000L
+        disconnect()
+        runDelay(delay) {
+            checkBluetoothAdapter { context, adapter ->
+                context.registerReceiver(object : BroadcastReceiver() {
+                    override fun onReceive(context: Context, intent: Intent?) {
+                        if (intent?.action != BluetoothAdapter.ACTION_STATE_CHANGED) {
+                            return
+                        }
+                        val a = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1)
+                        log(a)
+                        when (a) {
+                            BluetoothAdapter.STATE_OFF -> adapter.enable()
+                            BluetoothAdapter.STATE_ON -> {
+                                context.unregisterReceiver(this)
+                                action()
+                            }
                         }
                     }
-                }
-            }, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
+                }, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
 
-            if (adapter.isEnabled) {
-                adapter.disable()
-            } else {
-                adapter.enable()
+                if (adapter.isEnabled) {
+                    adapter.disable()
+                } else {
+                    adapter.enable()
+                }
             }
         }
     }
@@ -162,6 +167,8 @@ object BluetoothHelper : Logger {
                         }
                     }
 
+                    currentSocket = socket
+
                     uiThread {
                         threadPool.execute {
                             //读取相关
@@ -199,6 +206,7 @@ object BluetoothHelper : Logger {
                             } catch (e: Exception) {
                                 cb.connectFail(device)
                                 threadPool.checkShutdown {
+                                    currentSocket = null
                                     onShutDown()
                                 }
                                 return@execute
@@ -212,6 +220,7 @@ object BluetoothHelper : Logger {
                             } catch (e: Exception) {
                                 cb.connectDisconnect(device)
                                 threadPool.checkShutdown {
+                                    currentSocket = null
                                     onShutDown()
                                 }
                             }
@@ -219,6 +228,15 @@ object BluetoothHelper : Logger {
                     }
                 })
             }
+        }
+    }
+
+    var currentSocket: BluetoothSocket? = null
+
+    fun disconnect() {
+        try {
+            currentSocket?.close()
+        } catch (e: Exception) {
         }
     }
 
