@@ -150,13 +150,13 @@ object BluetoothHelper : Logger {
                         log("连接成功 ${if (useInsecureConnect) "不稳定方案" else "稳定方案"}")
                         cb.connectSuccess(device)
                     } catch (e: Exception) {
-                        socket = device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType).invoke(device, 1) as BluetoothSocket
+//                        socket =
                         try {
-                            socket.connect()
+                            socket = connectFromReflect(device)
                             log("连接成功,反射方案")
                             cb.connectSuccess(device)
                         } catch (e: Exception) {
-                            log("连接出错", e)
+                            log("连接出错,反射方案", e)
                             cb.connectFail(device)
                             return@Runnable
                         }
@@ -220,6 +220,21 @@ object BluetoothHelper : Logger {
                 })
             }
         }
+    }
+
+    @Throws(Exception::class)
+    private fun connectFromReflect(device: BluetoothDevice): BluetoothSocket? {
+        (1 until 10).forEach {
+            val socket = device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType).invoke(device, it) as BluetoothSocket
+            try {
+                socket.connect()
+                log("连接成功,反射方案 port = $it")
+                return@connectFromReflect socket
+            } catch (e: Exception) {
+                log("连接失败,反射方案 port = $it")
+            }
+        }
+        throw Exception("连接失败,反射f方案1~10均告失败")
     }
 
     /**
