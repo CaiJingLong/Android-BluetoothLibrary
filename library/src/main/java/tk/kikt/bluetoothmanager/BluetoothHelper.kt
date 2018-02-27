@@ -157,6 +157,7 @@ object BluetoothHelper : Logger {
                     } catch (e: Exception) {
 //                        socket =
                         try {
+                            log("尝试,反射方案")
                             socket = connectFromReflect(device)
                             log("连接成功,反射方案")
                             cb.connectSuccess(device)
