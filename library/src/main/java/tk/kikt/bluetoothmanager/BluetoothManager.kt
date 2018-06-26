@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import tk.kikt.bluetoothmanager.handler.BluetoothHandler
 import tk.kikt.bluetoothmanager.handler.BluetoothType
+import java.util.*
 import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -62,6 +63,10 @@ object BluetoothConnectManager : Logger {
         locker.withLock {
             return handlerMap[type]
         }
+    }
+
+    fun allHandlers(): Collection<BluetoothHandler> {
+        return handlerMap.values
     }
 
     var currentDevice: BluetoothDevice? = null
