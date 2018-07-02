@@ -10,6 +10,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Handler
 import android.widget.Toast
+import tk.kikt.bluetoothmanager.engine.IToast
 import tk.kikt.bluetoothmanager.ext.checkShutdown
 import tk.kikt.bluetoothmanager.ext.runDelay
 import tk.kikt.bluetoothmanager.ext.trimAndIgnoreCaseEquals
@@ -358,10 +359,15 @@ object BluetoothHelper : Logger {
     private val handler = Handler()
 
     fun toast(msg: String) {
-        handler.post {
-            val context = BluetoothConnectManager.application
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        if (toastHelper != null) {
+            toastHelper?.toast(msg)
+        } else {
+            handler.post {
+                val context = BluetoothConnectManager.application
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
+    var toastHelper: IToast? = null
 }
