@@ -25,6 +25,27 @@ abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logg
      * 连接方法
      */
     fun conn(name: String, pwd: String, init: BluetoothCallback.() -> Unit) {
+        val cb = initCb(init)
+
+        BluetoothHelper.withOpen {
+            BluetoothHelper.findDevice(name, delayOff = findDeviceTimeout, callback = object : BluetoothHelper.OnNormalScanCallback {
+                override fun onStartScan() {
+                    cb.onStartScan()
+                }
+
+                override fun onNotFoundDevice() {
+                    cb.onNotFountDevice()
+                }
+
+                override fun onFoundDevice(device: BluetoothDevice) {
+                    _connectDevice(device, pwd, cb.onConnCallback)
+                }
+            })
+        }
+
+    }
+
+    private fun initCb(init: BluetoothCallback.() -> Unit): BluetoothCallback {
         val cb = BluetoothCallback()
         cb.init()
         val outInit = cb.onConnCallback
@@ -45,36 +66,30 @@ abstract class AbstractNormalBluetoothHandler : AbstractBluetoothHandler(), Logg
                 currentDevice = null
             }
         }
+        return cb
+    }
 
-        BluetoothHelper.withOpen {
-            BluetoothHelper.findDevice(name, delayOff = findDeviceTimeout, callback = object : BluetoothHelper.OnNormalScanCallback {
-                override fun onStartScan() {
-                    cb.onStartScan()
-                }
+    fun connectDevice(device: BluetoothDevice, pwd: String, init: BluetoothCallback.() -> Unit) {
+        val cb = initCb(init)
+        _connectDevice(device, pwd, cb.onConnCallback)
+    }
 
-                override fun onNotFoundDevice() {
-                    cb.onNotFountDevice()
-                }
+    private fun _connectDevice(device: BluetoothDevice, pwd: String, init: (BluetoothHelper.ConnectStateCallback.() -> Unit)) {
 
-                override fun onFoundDevice(device: BluetoothDevice) {
-                    inQueue.clear()
-                    outQueue.clear()
-                    BluetoothHelper.connectDevice(device, pwd, inQueue, outQueue, cb.onConnCallback) {
-                        log("连接断开时调用")
-                        readThreadPool.shutdown()
+        inQueue.clear()
+        outQueue.clear()
+        BluetoothHelper.connectDevice(device, pwd, inQueue, outQueue, init) {
+            log("连接断开时调用")
+            readThreadPool.shutdown()
 
-                        if (readThreadPool.isShutdown) {
-                            readThreadPool = Executors.newFixedThreadPool(3)
-                        }
+            if (readThreadPool.isShutdown) {
+                readThreadPool = Executors.newFixedThreadPool(3)
+            }
 
-                        inQueue.clear()
-                        outQueue.clear()
-                    }
-                    waitForInputMsg()
-                }
-            })
+            inQueue.clear()
+            outQueue.clear()
         }
-
+        waitForInputMsg()
     }
 
     fun disconnect() {
